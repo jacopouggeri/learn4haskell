@@ -344,6 +344,12 @@ of a book, but you are not limited only by the book properties we described.
 Create your own book type of your dreams!
 -}
 
+data Book = Book
+    { bookTitle :: String
+    , bookAuthor :: String
+    , bookPages :: Int
+    } deriving (Show)
+
 {- |
 =⚔️= Task 2
 
@@ -375,6 +381,24 @@ after the fight. The battle has the following possible outcomes:
 ♫ NOTE: In this task, you need to implement only a single round of the fight.
 
 -}
+
+data Knight = Knight
+    { knightHealth :: Int
+    , knightAttack :: Int
+    , knightGold :: Int
+    } deriving (Show)
+
+data Monster = Monster
+    { monsterHealth :: Int
+    , monsterAttack :: Int
+    , monsterGold :: Int
+    } deriving (Show)
+
+fight :: Knight -> Monster -> Int
+fight knight monster
+    | monsterHealth monster <= knightAttack knight = monsterGold monster
+    | monsterAttack monster >= knightHealth knight = -1
+    | otherwise = 0
 
 {- |
 =🛡= Sum types
@@ -462,6 +486,15 @@ Create a simple enumeration for the meal types (e.g. breakfast). The one who
 comes up with the most number of names wins the challenge. Use your creativity!
 -}
 
+data Meal
+  = Breakfast
+  | Lunch
+  | Dinner
+  | Brunch
+  | MidnightSnack
+  | CoffeBreak
+  | AfternoonSnack
+
 {- |
 =⚔️= Task 4
 
@@ -481,6 +514,62 @@ After defining the city, implement the following functions:
    complicated task, walls can be built only if the city has a castle
    and at least 10 living __people__ inside in all houses of the city in total.
 -}
+
+buildCastle :: City -> City
+buildCastle (City building houses) = CityWithCastle newCastle building houses
+    where newCastle = Castle "Melegnano" False
+buildCastle (CityWithCastle oldCastle building houses) = CityWithCastle newCastle building houses
+    where newCastle = Castle newName (castleWalls oldCastle)
+          newName = "New " ++ castleName oldCastle
+
+buildHouse :: City -> City
+buildHouse (City building houses) = City building (OnePersonHouse : houses)
+buildHouse (CityWithCastle castle building houses) = CityWithCastle castle building (OnePersonHouse : houses)
+
+buildWalls :: City -> City
+buildWalls (City building houses) = City building houses
+buildWalls (CityWithCastle castle building houses)
+    | castleWalls castle || livingPeople houses < 10 = CityWithCastle castle building houses
+    | otherwise = CityWithCastle castleWithWalls building houses
+        where castleWithWalls = Castle (castleName castle) True
+
+livingPeople :: [House] -> Int
+livingPeople houseList = go houseList 0
+    where go [] count = count
+          go listLeft count =
+              go newListLeft newCount
+                  where newCount = count + countPeople (head listLeft)
+                        newListLeft = tail listLeft
+
+countPeople :: House -> Int
+countPeople OnePersonHouse = 1
+countPeople TwoPeopleHouse = 2
+countPeople ThreePeopleHouse = 3
+countPeople FourPeopleHouse = 4
+
+
+data Castle = Castle
+    { castleName :: String
+    , castleWalls :: Bool
+    } deriving (Show)
+data Wall = Wall
+data Building = Church | Library
+data Person
+    = Person
+    | Empty
+
+data House = OnePersonHouse | TwoPeopleHouse | ThreePeopleHouse | FourPeopleHouse
+
+data City
+    = CityWithCastle
+        { cityCastle :: Castle
+        , cityBuilding :: Building
+        , cityHouses :: [House]
+        }
+    | City
+        { cityBuilding :: Building
+        , cityHouses :: [House]
+        }
 
 {-
 =🛡= Newtypes
@@ -562,22 +651,28 @@ introducing extra newtypes.
 🕯 HINT: if you complete this task properly, you don't need to change the
     implementation of the "hitPlayer" function at all!
 -}
+newtype PlayerHealth = PlayerHealth {unHealth :: Int}
+newtype PlayerArmor = PlayerArmor {unArmor :: Int}
+newtype PlayerAttack = PlayerAttack {unAttack :: Int}
+newtype PlayerDexterity = PlayerDexterity {unDexterity :: Int}
+newtype PlayerStrength = PlayerStrength {unStrength :: Int}
+
 data Player = Player
-    { playerHealth    :: Int
-    , playerArmor     :: Int
-    , playerAttack    :: Int
-    , playerDexterity :: Int
-    , playerStrength  :: Int
+    { playerHealth    :: PlayerHealth
+    , playerArmor     :: PlayerArmor
+    , playerAttack    :: PlayerAttack
+    , playerDexterity :: PlayerDexterity
+    , playerStrength  :: PlayerStrength
     }
 
-calculatePlayerDamage :: Int -> Int -> Int
-calculatePlayerDamage attack strength = attack + strength
+calculatePlayerDamage :: PlayerAttack -> PlayerStrength -> Int
+calculatePlayerDamage attack strength = unAttack attack + unStrength strength
 
-calculatePlayerDefense :: Int -> Int -> Int
-calculatePlayerDefense armor dexterity = armor * dexterity
+calculatePlayerDefense :: PlayerArmor -> PlayerDexterity -> Int
+calculatePlayerDefense armor dexterity = unArmor armor * unDexterity dexterity
 
-calculatePlayerHit :: Int -> Int -> Int -> Int
-calculatePlayerHit damage defense health = health + defense - damage
+calculatePlayerHit :: Int -> Int -> PlayerHealth -> PlayerHealth
+calculatePlayerHit damage defense health = PlayerHealth (unHealth health + defense - damage)
 
 -- The second player hits first player and the new first player is returned
 hitPlayer :: Player -> Player -> Player
@@ -755,6 +850,17 @@ parametrise data types in places where values can be of any general type.
   maybe-treasure ;)
 -}
 
+newtype TreasureChest loot = Maybe loot
+
+data DragonLair a b = DragonLair {
+  dragon :: Dragon a,
+  treasure :: TreasureChest b
+}
+
+data Dragon a = Dragon {
+  magicalPower :: a
+}
+
 {-
 =🛡= Typeclasses
 
@@ -788,7 +894,7 @@ specify the typeclass name. Typeclasses should start with an upper case letter.
 After that, the type parameter should be identified, which represents the data
 types that would have instances of this typeclass. And, finally, the "where"
 keyword. After, you can specify methods of the typeclass – functions that should
-work with the type parameter.
+work with the typearameter.
 
 @
       ┌─ typeclass name
